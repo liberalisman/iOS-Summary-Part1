@@ -4,7 +4,7 @@
 
 1. [01-iOS程序启动过程](https://github.com/liberalisman/2018-Interview-Preparation#01-ios-app-startup-process)
 
-2. [02-浅拷贝-深拷贝](https://github.com/liberalisman/2018-Interview-Preparation#02-ShallowCopy-DeepCopy)
+2. [02-浅拷贝-深拷贝](https://github.com/liberalisman/2018-Interview-Preparation#02-shallowcopy-deepcopy)
 
 
 
