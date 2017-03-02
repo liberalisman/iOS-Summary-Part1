@@ -17,6 +17,9 @@
    
    iii.[copy 本质](https://github.com/liberalisman/2018-Interview-Preparation#三copy-本质)
 
+3.  [03-View的生命周期](https://github.com/liberalisman/2018-Interview-Preparation#03-view的生命周期)
+
+
 
 
 
