@@ -240,4 +240,8 @@ person.name = string;
 NSLog(@"name = %@", person.name);
 ```
 
+## 03-View的生命周期
+
+* 读懂这一张图即可
+![](http://okhqmtd8q.bkt.clouddn.com/image/jpg/View%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.png)
 
