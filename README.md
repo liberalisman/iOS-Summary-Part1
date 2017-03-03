@@ -1,20 +1,14 @@
-# 2018
+
 
 文章大纲，便于浏览
 
 1. [01-iOS程序启动过程](https://github.com/liberalisman/2018-Interview-Preparation#01-ios-app-startup-process)
-
     i.[完整启动过程 ](https://github.com/liberalisman/2018-Interview-Preparation#一启动完整过程)
-    
     ii.[程序启动原理](https://github.com/liberalisman/2018-Interview-Preparation#二程序启动原理)
-    
 
 2. [02-浅拷贝-深拷贝](https://github.com/liberalisman/2018-Interview-Preparation#02-shallowcopy-deepcopy)
-
     i. [系统对象的 copy/mutableCopy](https://github.com/liberalisman/2018-Interview-Preparation#一系统对象的-copymutablecopy)
-    
    ii.[自定义对象实现 Copy-MutableCopy](https://github.com/liberalisman/2018-Interview-Preparation#二自定义对象实现-copy-mutablecopy)
-   
    iii.[copy 本质](https://github.com/liberalisman/2018-Interview-Preparation#三copy-本质)
 
 3. [03-View的生命周期](https://github.com/liberalisman/2018-Interview-Preparation#03-view的生命周期)
