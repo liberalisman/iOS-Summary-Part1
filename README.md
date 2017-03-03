@@ -446,4 +446,8 @@ void objc_setProperty(id self, SEL _cmd, ptrdiff_t offset, id newValue, BOOL ato
 }
 ```
 
+## 05-事件传递和事件响应
+
+这部门知识如果自己总结，篇幅较长。可以参考[以下文章](http://www.jianshu.com/p/2e074db792ba)
+
 
