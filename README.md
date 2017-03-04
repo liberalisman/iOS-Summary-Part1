@@ -20,7 +20,7 @@
 
 4. [04-@property](https://github.com/liberalisman/2018-Interview-Preparation#04-property)
 
-5. [05-事件传递和事件响应](http://www.jianshu.com/p/2e074db792ba)
+5. [05-事件传递和事件响应](https://github.com/liberalisman/iOS-Summary-Part1#05-事件传递和事件响应)
 
 
 
