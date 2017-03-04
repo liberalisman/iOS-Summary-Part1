@@ -21,7 +21,7 @@
 4. [04-@property](https://github.com/liberalisman/2018-Interview-Preparation#04-property)
 
 5. [05-事件传递和事件响应](https://github.com/liberalisman/iOS-Summary-Part1#05-事件传递和事件响应)
-6. [06-KVC](github.com/liberalisman/iOS-Summary-Part1#06-kvc)
+6. [06-KVC](https://github.com/liberalisman/iOS-Summary-Part1#06-kvc)
 
 
 
