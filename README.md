@@ -496,6 +496,7 @@ void objc_setProperty(id self, SEL _cmd, ptrdiff_t offset, id newValue, BOOL ato
 同时苹果对一些容器类比如NSArray或者NSSet等，KVC有着特殊的实现。建议有基础的或者英文好的开发者直接去看苹果的官方文档，相信你会对KVC的理解更上一个台阶。
 
 **KVC是怎么寻找Key的**
+
 KVC是怎么使用的，我相信绝大多数的开发者都很清楚，我在这里就不再写简单的使用KVC来设值和取值的代码了，首页我们来探讨KVC在内部是按什么样的顺序来寻找key的。
 当调用`setValue：`属性值 `forKey：``@”name“`的代码时，底层的执行机制如下：
 
