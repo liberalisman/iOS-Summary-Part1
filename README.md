@@ -501,9 +501,13 @@ KVC是怎么使用的，我相信绝大多数的开发者都很清楚，我在�
 
 
 * 程序优先调用`set<Key>:`属性值方法，代码通过`setter`方法完成设置。注意，这里的`<key>`是指成员变量名，首字母大清写要符合`KVC`的全名规则，下同
+
 * 如果没有找到`setName：`方法，`KVC`机制会检查`+ (BOOL)accessInstanceVariablesDirectly`方法有没有返回`YES`，默认该方法会返回`YES`，如果你重写了该方法让其返回`NO`的话，那么在这一步KVC会执行`setValue：forUNdefinedKey：`方法，不过一般开发者不会这么做。所以KVC机制会搜索该类里面有没有名为`_<key>`的成员变量，无论该变量是在类接口部分定义，还是在类实现部分定义，也无论用了什么样的访问修饰符，只在存在以`_<key>`命名的变量，`KVC`都可以对该成员变量赋值。
+
 * 如果该类即没有`set<Key>：`方法，也没有`_<key>`成员变量，`KVC`机制会搜索`_is<Key>`的成员变量，
+
 * 和上面一样，如果该类即没有`set<Key>：`方法，也没有`_<key>`和`_is<Key>`成员变量，`KVC`机制再会继续搜索`<key>`和`is<Key>`的成员变量。再给它们赋值。
+
 * 如果上面列出的方法或者成员变量都不存在，系统将会执行该对象的`setValue：forUNdefinedKey：`方法，默认是抛出异常。
 
 如果开发者想让这个类禁用`KVC`里，那么重写`+ (BOOL)accessInstanceVariablesDirectly`方法让其返回NO即可，这样的话如果`KVC`没有找到`set<Key>:`属性名时，会直接用`setValue：forUNdefinedKey：`方法。
