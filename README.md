@@ -22,6 +22,7 @@
 
 5. [05-事件传递和事件响应](https://github.com/liberalisman/iOS-Summary-Part1#05-事件传递和事件响应)
 6. [06-KVC](https://github.com/liberalisman/iOS-Summary-Part1#06-kvc)
+7. [07-KVO](https://github.com/liberalisman/iOS-Summary-Part1#07-kvo)
 
 
 
