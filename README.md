@@ -789,3 +789,250 @@ NSLog(@"%@, %d, %ld", name, sex, age);
 ```
 
 
+### SQLite3
+
+> 之前的所有存储方法，都是覆盖存储。如果想要增加一条数据就必须把整个文件读出来，然后修改数据后再把整个内容覆盖写入文件。所以它们都不适合存储大量的内容。
+
+#### 1.字段类型
+
+表面上·SQLite·将数据分为以下几种类型：
+
+```objc
+integer : 整数
+real : 实数（浮点数）
+text : 文本字符串
+blob : 二进制数据，比如文件，图片之类的
+```
+
+实际上`SQLite`是无类型的。即不管你在创表时指定的字段类型是什么，存储是依然可以存储任意类型的数据。而且在创表时也可以不指定字段类型。`SQLite`之所以什么类型就是为了良好的编程规范和方便开发人员交流，所以平时在使用时最好设置正确的字段类型！主键必须设置成`integer`
+
+
+#### 2. 准备工作
+
+准备工作就是导入依赖库啦，在`iOS`中要使用`SQLite3`，需要添加库文件：`libsqlite3.dylib`并导入主头文件，这是一个`C语言`的库，所以直接使用`SQLite3`还是比较麻烦的。
+
+#### 3.使用
+
+##### 1.创建数据库并打开
+
+操作数据库之前必须先指定数据库文件和要操作的表，所以使用`SQLite3`，首先要打开数据库文件，然后指定或创建一张表。
+
+```objc
+//  打开数据库并创建一个表
+- (void)openDatabase 
+{
+   //1.设置文件名
+   NSString *filename = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"person.db"];
+   
+   //2.打开数据库文件，如果没有会自动创建一个文件
+   NSInteger result = sqlite3_open(filename.UTF8String, &_sqlite3);
+   
+   if (result == SQLITE_OK) 
+   {
+       NSLog(@"打开数据库成功！");
+       
+       //3.创建一个数据库表
+       char *errmsg = NULL;
+       sqlite3_exec(_sqlite3, "CREATE TABLE IF NOT EXISTS t_person(id integer primary key autoincrement, name text, age integer)", NULL, NULL, &errmsg);
+       
+       if (errmsg) 
+       {
+           NSLog(@"错误：%s", errmsg);
+       } 
+       else 
+       {
+           NSLog(@"创表成功！");
+       }
+   } 
+   else 
+   {
+       NSLog(@"打开数据库失败！");
+   }
+}
+```
+
+##### 2.执行指令
+使用 `sqlite3_exec()` 方法可以执行任何`SQL`语句，比如`创表、更新、插入和删除`操作。但是一般不用它执行查询语句，因为它不会返回查询到的数据。
+
+```objc
+// 往表中插入1000条数据
+- (void)insertData 
+{
+    NSString *nameStr;
+    NSInteger age;
+    
+    for (NSInteger i = 0; i < 1000; i++) 
+    {
+      nameStr = [NSString stringWithFormat:@"Bourne-%d", arc4random_uniform(10000)];
+      age = arc4random_uniform(80) + 20;
+      NSString *sql = [NSString stringWithFormat:@"INSERT INTO t_person (name, age) VALUES('%@', '%ld')", nameStr, age];
+      char *errmsg = NULL;
+      sqlite3_exec(_sqlite3, sql.UTF8String, NULL, NULL, &errmsg);
+      if (errmsg) 
+      {
+          NSLog(@"错误：%s", errmsg);
+      }
+    }
+    NSLog(@"插入完毕！");   
+}
+```
+
+##### 3.查询指令
+前面说过一般不使用 sqlite3_exec() 方法查询数据。因为查询数据必须要获得查询结果，所以查询相对比较麻烦。示例代码如下：
+
+```objc
+// sqlite3_prepare_v2() : 检查sql的合法性
+// sqlite3_step() : 逐行获取查询结果，不断重复，直到最后一条记录
+// sqlite3_coloum_xxx() : 获取对应类型的内容，iCol对应的就是SQL语句中字段的顺序，从0开始。根据实际查询字段的属性，使用sqlite3_column_xxx取得对应的内容即可。
+// sqlite3_finalize() : 释放stmt
+
+// 从表中读取数据到数组中
+- (void)readData 
+{
+   NSMutableArray *mArray = [NSMutableArray arrayWithCapacity:1000];
+   char *sql = "select name, age from t_person;";
+   sqlite3_stmt *stmt;
+   NSInteger result = sqlite3_prepare_v2(_sqlite3, sql, -1, &stmt, NULL);
+   
+   if (result == SQLITE_OK) 
+   {
+       while (sqlite3_step(stmt) == SQLITE_ROW) 
+       {
+           char *name = (char *)sqlite3_column_text(stmt, 0);
+           NSInteger age = sqlite3_column_int(stmt, 1);
+           //创建对象
+           Person *person = [Person personWithName:[NSString stringWithUTF8String:name] Age:age];
+           [mArray addObject:person];
+       }
+       self.dataList = mArray;
+   }
+   sqlite3_finalize(stmt);
+}
+```
+
+#### 4.总结
+
+总得来说，`SQLite3`的使用还是比较麻烦的，因为都是些`c语言`的函数，理解起来有些困难。不过在一般开发过程中，使用的都是第三方开源库 `FMDB`，封装了这些基本的`c语言`方法，使得我们在使用时更加容易理解，提高开发效率。
+
+### FMDB
+
+#### 1.简介
+
+> FMDB是iOS平台的SQLite数据库框架，它是以OC的方式封装了SQLite的C语言API，它相对于cocoa自带的C语言框架有如下的优点:
+使用起来更加面向对象，省去了很多麻烦、冗余的C语言代码
+对比苹果自带的Core Data框架，更加轻量级和灵活
+提供了多线程安全的数据库操作方法，有效地防止数据混乱
+
+
+#### 2.核心类
+
+**FMDB有三个主要的类：**
+
+```objc
+// FMDatabase
+一个FMDatabase对象就代表一个单独的SQLite数据库，用来执行SQL语句
+
+// FMResultSet
+使用FMDatabase执行查询后的结果集
+
+// FMDatabaseQueue
+用于在多线程中执行多个查询或更新，它是线程安全的
+```
+
+#### 3.打开数据库
+
+> 和c语言框架一样，FMDB通过指定SQLite数据库文件路径来创建FMDatabase对象，但FMDB更加容易理解，使用起来更容易，使用之前一样需要导入sqlite3.dylib。打开数据库方法如下：
+
+```objc
+NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"person.db"];
+FMDatabase *database = [FMDatabase databaseWithPath:path]; 
+   
+if (![database open]) 
+{
+    NSLog(@"数据库打开失败！");
+}
+```
+**值得注意的是，Path的值可以传入以下三种情况：**
+
+```objc
+// 具体文件路径，如果不存在会自动创建
+// 空字符串@""，会在临时目录创建一个空的数据库，当FMDatabase连接关闭时，数据库文件也被删除
+// nil，会创建一个内存中临时数据库，当FMDatabase连接关闭时，数据库会被销毁
+```
+#### 4.更新
+
+> 在FMDB中，除查询以外的所有操作，都称为“更新”, 如：create、drop、insert、update、delete等操作，使用executeUpdate:方法执行更新：
+
+```objc
+//常用方法有以下 3 种：   
+- (BOOL)executeUpdate:(NSString*)sql, ...
+
+- (BOOL)executeUpdateWithFormat:(NSString*)format, ...
+
+- (BOOL)executeUpdate:(NSString*)sql withArgumentsInArray:(NSArray *)arguments
+
+//示例
+[database executeUpdate:@"CREATE TABLE IF NOT EXISTS t_person(id integer primary key autoincrement, name text, age integer)"]; 
+  
+//或者  
+[database executeUpdate:@"INSERT INTO t_person(name, age) VALUES(?, ?)", @"Bourne", [NSNumber numberWithInt:42]];
+```
+#### 5.查询
+
+查询方法也有3种，使用起来相当简单：
+
+```objc
+- (FMResultSet *)executeQuery:(NSString*)sql, ...
+- (FMResultSet *)executeQueryWithFormat:(NSString*)format, ...
+- (FMResultSet *)executeQuery:(NSString *)sql withArgumentsInArray:(NSArray *)arguments
+```
+
+查询示例：
+
+```objc
+//1.执行查询
+FMResultSet *result = [database executeQuery:@"SELECT * FROM t_person"];
+
+//2.遍历结果集
+while ([result next]) 
+{
+    NSString *name = [result stringForColumn:@"name"];
+    int age = [result intForColumn:@"age"];
+}
+```
+
+#### 6.线程安全
+
+> 在多个线程中同时使用一个 `FMDatabase` 实例是不明智的。不要让多个线程分享同一个`FMDatabase`实例，它无法在多个线程中同时使用。 如果在多个线程中同时使用一个`FMDatabase`实例，会造成数据混乱等问题。所以，请使用 `FMDatabaseQueue`，它是线程安全的。以下是使用方法：
+
+创建队列。
+
+```objc
+FMDatabaseQueue *queue = [FMDatabaseQueue databaseQueueWithPath:aPath];
+
+// 使用队列
+[queue inDatabase:^(FMDatabase *database)
+{    
+          [database executeUpdate:@"INSERT INTO t_person(name, age) VALUES (?, ?)", @"Bourne_1", [NSNumber numberWithInt:1]];    
+          [database executeUpdate:@"INSERT INTO t_person(name, age) VALUES (?, ?)", @"Bourne_2", [NSNumber numberWithInt:2]];    
+          [database executeUpdate:@"INSERT INTO t_person(name, age) VALUES (?, ?)", @"Bourne_3", [NSNumber numberWithInt:3]];      
+          FMResultSet *result = [database executeQuery:@"select * from t_person"];    
+         while([result next]) {   
+         }    
+}];
+
+// 而且可以轻松地把简单任务包装到事务里：
+[queue inTransaction:^(FMDatabase *database, BOOL *rollback) {    
+          [database executeUpdate:@"INSERT INTO t_person(name, age) VALUES (?, ?)", @"Bourne_1", [NSNumber numberWithInt:1]];    
+          [database executeUpdate:@"INSERT INTO t_person(name, age) VALUES (?, ?)", @"Bourne_2", [NSNumber numberWithInt:2]];    
+          [database executeUpdate:@"INSERT INTO t_person(name, age) VALUES (?, ?)", @"Bourne_3", [NSNumber numberWithInt:3]];      
+          FMResultSet *result = [database executeQuery:@"select * from t_person"];    
+             while([result next]) {   
+             }   
+           //回滚
+           *rollback = YES;  
+    }];
+```
+
+FMDatabaseQueue 后台会建立系列化的G-C-D队列，并执行你传给G-C-D队列的块。这意味着 你从多线程同时调用调用方法，GDC也会按它接收的块的顺序来执行。
+
