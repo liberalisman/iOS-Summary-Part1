@@ -577,3 +577,226 @@ KVC是怎么使用的，我相信绝大多数的开发者都很清楚，我在�
 
 回答是可以的。我们可以分别在父类以及本类中定义各自的`context`字符串，比如在本类中定义`context`为`@"ThisIsMyKVOContextNotSuper"`;然后在`dealloc`中`remove observer`时指定移除的自身添加的`observer`。这样iOS就能知道移除的是自己的`kvo`，而不是父类中的`kvo`，避免二次`remove`造成`crash`。
 
+## 08-iOS数据持久化方案
+
+### 存储方案
+* plist文件（属性列表）
+* preference（偏好设置）
+* NSKeyedArchiver（归档）
+* SQLite 3
+* CoreData
+
+### 沙盒
+
+> iOS程序默认情况下只能访问程序自己的目录，这个目录被称为“沙盒”。
+
+#### 1.结构
+
+沙盒的目录结构如下：
+
+```objc
+"应用程序包"
+Documents
+Library
+    Caches
+    Preferences
+tmp
+```
+
+#### 2.目录特性
+
+> 虽然沙盒中有这么多文件夹，但是每个文件夹都不尽相同，都有各自的特性。所以在选择存放目录时，一定要认真选择适合的目录。
+
+"应用程序包": 这里面存放的是应用程序的**源文件**，包括**资源文件**和**可执行文件**。
+
+* Documents: 最常用的目录，iTunes同步该应用时会同步此文件夹中的内容，适合存储重要数据。
+ 
+```objc
+  NSString *path = [[NSBundle mainBundle] bundlePath];
+  NSLog(@"%@", path);
+```
+
+* Library/Caches: iTunes不会同步此文件夹，适合存储体积大，不需要备份的非重要数据。
+
+```objc
+  NSString *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+  NSLog(@"%@", path);
+```
+
+* Library/Preferences: iTunes同步该应用时会同步此文件夹中的内容，通常保存应用的设置信息。
+
+```objc
+  NSString *path = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject;
+  NSLog(@"%@", path);
+```
+
+* tmp: iTunes不会同步此文件夹，系统可能在应用没运行时就删除该目录下的文件，所以此目录适合保存应用中的一些临时文件，用完就删除。
+
+```objc
+  NSString *path = NSTemporaryDirectory();
+  NSLog(@"%@", path);
+```
+
+### plist文件
+
+> plist文件是将某些特定的类，通过XML文件的方式保存在目录中。
+
+可以被序列化的类型只有如下几种：
+
+```objc
+NSArray;
+NSMutableArray;
+NSDictionary;
+NSMutableDictionary;
+NSData;
+NSMutableData;
+NSString;
+NSMutableString;
+NSNumber;
+NSDate;
+```
+
+#### 1.获得文件路径
+
+```objc
+NSString *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+NSString *fileName = [path stringByAppendingPathComponent:@"123.plist"];
+```
+    
+#### 2.存储
+
+```objc
+NSArray *array = @[@"123", @"456", @"789"];
+[array writeToFile:fileName atomically:YES];
+```
+
+#### 3.读取
+
+```objc
+NSArray *result = [NSArray arrayWithContentsOfFile:fileName];
+NSLog(@"%@", result);
+```
+
+#### 4.注意
+
+```objc
+// 只有以上列出的类型才能使用plist文件存储。
+// 存储时使用writeToFile: atomically:方法。 其中atomically表示是否需要先写入一个辅助文件，再把辅助文件拷贝到目标文件地址。这是更安全的写入文件方法，一般都写YES。
+// 读取时使用arrayWithContentsOfFile:方法。
+```
+
+### Preference
+
+#### 1.使用方法
+
+```objc
+//1.获得NSUserDefaults文件
+NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+
+//2.向文件中写入内容
+[userDefaults setObject:@"AAA" forKey:@"a"];
+[userDefaults setBool:YES forKey:@"sex"];
+[userDefaults setInteger:21 forKey:@"age"];
+
+//2.1立即同步
+[userDefaults synchronize];
+
+//3.读取文件
+NSString *name = [userDefaults objectForKey:@"a"];
+BOOL sex = [userDefaults boolForKey:@"sex"];
+NSInteger age = [userDefaults integerForKey:@"age"];
+NSLog(@"%@, %d, %ld", name, sex, age);
+```
+
+#### 2.注意
+
+```objc
+// 偏好设置是专门用来保存应用程序的配置信息的，一般不要在偏好设置中保存其他数据。
+// 如果没有调用synchronize方法，系统会根据I/O情况不定时刻地保存到文件中。所以如果需要立即写入文件的就必须调用synchronize方法。
+// 偏好设置会将所有数据保存到同一个文件中。即preference目录下的一个以此应用包名来命名的plist文件。
+```
+
+
+### NSKeyedArchiver
+
+> 归档在iOS中是另一种形式的序列化，只要遵循了NSCoding协议的对象都可以通过它实现序列化。由于决大多数支持存储数据的Foundation和Cocoa Touch类都遵循了NSCoding协议，因此，对于大多数类来说，归档相对而言还是比较容易实现的。
+
+#### 1.遵循NSCoding协议
+
+> NSCoding协议声明了两个方法，这两个方法都是必须实现的。一个用来说明如何将对象编码到归档中，另一个说明如何进行解档来获取一个新对象。
+
+遵循协议和设置属性
+
+```objc
+  //1.遵循NSCoding协议 
+  @interface Person : NSObject   //2.设置属性
+  @property (strong, nonatomic) UIImage *avatar;
+  @property (copy, nonatomic) NSString *name;
+  @property (assign, nonatomic) NSInteger age;
+  @end
+```
+
+实现协议方法
+
+```objc
+  //解档
+  - (id)initWithCoder:(NSCoder *)aDecoder {
+      if ([super init]) {
+          self.avatar = [aDecoder decodeObjectForKey:@"avatar"];
+          self.name = [aDecoder decodeObjectForKey:@"name"];
+          self.age = [aDecoder decodeIntegerForKey:@"age"];
+      }
+      return self;
+  }
+  
+  //归档
+  - (void)encodeWithCoder:(NSCoder *)aCoder {
+      [aCoder encodeObject:self.avatar forKey:@"avatar"];
+      [aCoder encodeObject:self.name forKey:@"name"];
+      [aCoder encodeInteger:self.age forKey:@"age"];
+  }
+
+```
+  
+  
+**特别注意**
+
+```objc
+如果需要归档的类是某个自定义类的子类时，就需要在归档和解档之前先实现父类的归档和解档方法。即 [super encodeWithCoder:aCoder] 和 [super initWithCoder:aDecoder] 方法;
+```
+
+#### 2.使用
+
+需要把对象归档是调用`NSKeyedArchiver`的工厂方法 `archiveRootObject: toFile: `方法。
+
+```objc
+  NSString *file = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"person.data"];
+  Person *person = [[Person alloc] init];
+  person.avatar = self.avatarView.image;
+  person.name = self.nameField.text;
+  person.age = [self.ageField.text integerValue];
+  [NSKeyedArchiver archiveRootObject:person toFile:file];
+```
+
+需要从文件中解档对象就调用`NSKeyedUnarchiver`的一个工厂方法 `unarchiveObjectWithFile:` 即可。
+
+```objc
+  NSString *file = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"person.data"];
+  Person *person = [NSKeyedUnarchiver unarchiveObjectWithFile:file];
+  if (person) 
+  {
+     self.avatarView.image = person.avatar;
+     self.nameField.text = person.name;
+     self.ageField.text = [NSString stringWithFormat:@"%ld", person.age];
+  }
+```
+  
+#### 3.注意
+
+```objc
+必须遵循并实现NSCoding协议
+保存文件的扩展名可以任意指定
+继承时必须先调用父类的归档解档方法
+```
+
+
