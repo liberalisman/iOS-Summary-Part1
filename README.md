@@ -514,3 +514,65 @@ KVC是怎么使用的，我相信绝大多数的开发者都很清楚，我在�
 如果开发者想让这个类禁用`KVC`里，那么重写`+ (BOOL)accessInstanceVariablesDirectly`方法让其返回NO即可，这样的话如果`KVC`没有找到`set<Key>:`属性名时，会直接用`setValue：forUNdefinedKey：`方法。
 
 
+## 07-KVO
+
+`KVO`，全称为`Key-Value Observing`，是iOS中的一种设计模式，用于检测对象的某些属性的实时变化情况并作出响应。当应用场景比较复杂时，多个地方存在crash的危险。
+
+首先，假设我们的目标是在一个`UITableViewController`内对`tableview`的`contentOffset`进行实时监测，很容易地使用`KVO`来实现为。
+
+在初始化方法中加入：
+
+```OBJC
+[_tableView addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
+
+// 在dealloc中移除KVO监听：
+[_tableView removeObserver:self forKeyPath:@"contentOffset" context:nil];
+
+// 添加默认的响应回调方法：
+- (void)observeValueForKeyPath:(NSString *)keyPath 
+                      ofObject:(id)object
+                        change:(NSDictionary *)change 
+                       context:(void *)context
+{
+    [self doSomethingWhenContentOffsetChanges];
+}
+```
+
+好了，`KVO`实现就到此完美结束了，开玩笑，肯定没这么简单的，这样的代码太粗糙了，当你在`controller`中添加多个`KVO`时，所有的回调都是走同上述函数，那就必须对触发回调函数的来源进行判断。判断如下：
+
+```objc
+- (void)observeValueForKeyPath:(NSString *)keyPath 
+                      ofObject:(id)object
+                        change:(NSDictionary *)change 
+                       context:(void *)context
+{
+    if (object == _tableView && [keyPath isEqualToString:@"contentOffset"]) 
+    {
+        [self doSomethingWhenContentOffsetChanges];
+    }
+}
+```
+
+你以为这样就结束了吗？答案是否定的！我们假设当前类(在例子中为`UITableViewController`)还有父类，并且父类也有自己绑定了一些其他`KVO`呢？我们看到，上述回调函数体中只有一个判断，如果这个`if`不成立，这次`KVO`事件的触发就会到此中断了。但事实上，若当前类无法捕捉到这个`KVO`，那很有可能是在他的`superClass`，或者`super-superClass...`中，上述处理砍断了这个链。合理的处理方式应该是这样的：
+
+```objc
+- (void)observeValueForKeyPath:(NSString *)keyPath 
+                      ofObject:(id)object
+                        change:(NSDictionary *)change 
+                       context:(void *)context
+{
+    if (object == _tableView && [keyPath isEqualToString:@"contentOffset"]) 
+    {
+        [self doSomethingWhenContentOffsetChanges];
+    } 
+    else 
+    {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
+```
+
+这样就结束了吗？答案仍旧是否定的。潜在的问题有可能出现在`dealloc`中对`KVO`的注销上。`KVO`的一种缺陷(其实不能称为缺陷，应该称为特性)是，当对同一个`keypath`进行两次`removeObserver`时会导致程序`crash`，这种情况常常出现在父类有一个`kvo`，父类在`dealloc`中`remove`了一次，子类又`remove`了一次的情况下。不要以为这种情况很少出现！当你封装`framework`开源给别人用或者多人协作开发时是有可能出现的，而且这种`crash`很难发现。不知道你发现没，目前的代码中`context`字段都是`nil`，那能否利用该字段来标识出到底`kvo`是`superClass`注册的，还是`self`注册的？
+
+回答是可以的。我们可以分别在父类以及本类中定义各自的`context`字符串，比如在本类中定义`context`为`@"ThisIsMyKVOContextNotSuper"`;然后在`dealloc`中`remove observer`时指定移除的自身添加的`observer`。这样iOS就能知道移除的是自己的`kvo`，而不是父类中的`kvo`，避免二次`remove`造成`crash`。
+
