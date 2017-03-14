@@ -3,15 +3,9 @@
 文章大纲，便于浏览
 
 1. [01-iOS程序启动过程](https://github.com/liberalisman/2018-Interview-Preparation#01-ios-app-startup-process)
-
 2. [02-浅拷贝-深拷贝](https://github.com/liberalisman/2018-Interview-Preparation#02-shallowcopy-deepcopy)
-
- 
-
 3. [03-View的生命周期](https://github.com/liberalisman/2018-Interview-Preparation#03-view的生命周期)
-
 4. [04-@property](https://github.com/liberalisman/2018-Interview-Preparation#04-property)
-
 5. [05-事件传递和事件响应](https://github.com/liberalisman/iOS-Summary-Part1#05-事件传递和事件响应)
 6. [06-KVC](https://github.com/liberalisman/iOS-Summary-Part1#06-kvc)
 7. [07-KVO](https://github.com/liberalisman/iOS-Summary-Part1#07-kvo)
