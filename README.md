@@ -1034,5 +1034,5 @@ FMDatabaseQueue *queue = [FMDatabaseQueue databaseQueueWithPath:aPath];
     }];
 ```
 
-FMDatabaseQueue 后台会建立系列化的`GCD`队列，并执行你传给`GCD`队列的块。这意味着 你从多线程同时调用调用方法，`GCD`也会按它接收的块的顺序来执行。
+FMDatabaseQueue 后台会建立系列化的`GCD`队列，并执行你传给`GCD`队列的块。这意味着 你从多线程同时调用调用方法，`GCD`也会按它接收的块的顺序来执行了。
 
