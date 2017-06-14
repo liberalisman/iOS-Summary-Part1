@@ -85,11 +85,11 @@ return UIApplicationMain(argc, argv, @"UIApplication", @"YYAppDelegate"); }}
 
 简要总结一下什么是浅拷贝，什么是深拷贝
 
-> 深拷贝就是内容拷贝
+> 深拷贝就是内容拷贝（分为单层拷贝、完全拷贝），深拷贝的之所以分为两类，主要是针对集合类
 
 > 浅拷贝就是指针拷贝
 
-###一.系统对象的 copy/mutableCopy
+####一.系统对象的 copy/mutableCopy
  
 
 ```objc
@@ -118,7 +118,7 @@ NSLog(@"mutableString = %p ",mutableString);
 
 ![](http://okhqmtd8q.bkt.clouddn.com/image/jpg/%E6%B7%B1%E6%8B%B7%E8%B4%9D-%E6%B5%85%E6%8B%B7%E8%B4%9D-02)
 
-###二.自定义对象实现 Copy-MutableCopy
+####二.自定义对象实现 Copy-MutableCopy
 
 * copy
 
@@ -205,7 +205,7 @@ GZQPerson *copyP = [person copy];  // 这里崩溃
 
 
 
-###三.copy 本质
+####三.copy 本质
 
 `property copy` 实际上就对name干了这个：
 
@@ -236,6 +236,18 @@ person.name = string;
 NSLog(@"name = %@", person.name);
 ```
 
+####四.集合类 Copy MutableCopy 操作
+
+> 单层深复制，也就是我们经常说的深复制，我这里说的单层深复制是对于集合类所说的(即NSArray,NSDictionary,NSSet)，单层深复制指的是只复制了该集合类的最外层，里边的元素没有复制，(即这两个集合类的地址不一样，但是两个集合里所存储的元素的地址是一样的)
+> 
+完全复制，指的是完全复制整个集合类，也就是说两个集合地址不一样，里边所存储的元素地址也不一样
+
+
+实现多层完全拷贝也很简单
+
+```objc
+ NSArray *copyArray = [[NSArray alloc] initWithArray:array copyItems:YES];  // 完全复制
+```
 ## 03-View的生命周期
 
 * 读懂这一张图即可
